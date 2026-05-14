@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jeopardy!</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0d0d4a;
+    --navy2: #1a1a6e;
+    --navy3: #1a3a8e;
+    --gold: #f0c040;
+    --gold2: #ffe060;
+    --blue-mid: #3a5abe;
+    --blue-light: #a0b4f0;
+    --dark-bg: #09103a;
+    --cell-used: #0a1540;
+  }
+
+  body {
+    background: var(--navy);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    color: #fff;
+  }
+
+  /* ── SETUP SCREEN ── */
+  #setup {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: radial-gradient(ellipse at 50% 30%, #1a1a6e 0%, #0d0d4a 70%);
+  }
+
+  #setup h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 8vw, 64px);
+    color: var(--gold);
+    letter-spacing: 6px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 40px rgba(240,192,64,0.3);
+  }
+
+  #setup .subtitle {
+    font-size: 14px;
+    color: var(--blue-light);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+
+  .setup-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(240,192,64,0.2);
+    border-radius: 16px;
+    padding: 36px 40px;
+    max-width: 560px;
+    width: 100%;
+  }
+
+  .step-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+
+  .tc-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .tc-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px 8px;
+    border-radius: 8px;
+    border: 2px solid rgba(240,192,64,0.4);
+    background: transparent;
+    color: var(--blue-light);
+    font-size: 15px;
+    font-family: 'Barlow', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tc-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .tc-btn.on { background: var(--gold); color: var(--navy); border-color: var(--gold); font-weight: 700; }
+
+  .names-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .names-grid input {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    font-size: 14px;
+    font-family: 'Barlow', sans-serif;
+    text-align: center;
+    transition: border-color 0.15s;
+  }
+
+  .names-grid input::placeholder { color: rgba(160,180,240,0.5); }
+  .names-grid input:focus { outline: none; border-color: var(--gold); }
+
+  .go-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--gold);
+    color: var(--navy);
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Playfair Display', serif;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .go-btn:hover { background: var(--gold2); transform: scale(1.01); }
+  .go-btn:active { transform: scale(0.99); }
+
+  /* ── GAME SCREEN ── */
+  #game { display: none; flex-direction: column; min-height: 100vh; }
+
+  .gtitle {
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(20px, 4vw, 32px);
+    color: #fff;
+    background: var(--navy2);
+    padding: 14px 0 12px;
+    letter-spacing: 5px;
+    border-bottom: 3px solid var(--gold);
+    text-shadow: 0 0 20px rgba(240,192,64,0.2);
+  }
+
+  .gtitle span { color: var(--gold); }
+
+  .board {
+    background: var(--navy2);
+    padding: 8px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    flex: 1;
+  }
+
+  .ch {
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    padding: 10px 4px;
+    text-align: center;
+    font-size: clamp(8px, 1.1vw, 11px);
+    font-weight: 600;
+    color: var(--gold);
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .cell {
+    background: var(--navy3);
+    border: 2px solid var(--blue-mid);
+    border-radius: 8px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: clamp(14px, 2.2vw, 20px);
+    font-weight: 700;
+    color: var(--gold);
+    font-family: 'Playfair Display', serif;
+    transition: background 0.12s, transform 0.1s, border-color 0.12s;
+    user-select: none;
+  }
+
+  .cell:hover {
+    background: #2a4ec0;
+    transform: scale(1.04);
+    border-color: var(--gold);
+    box-shadow: 0 0 16px rgba(240,192,64,0.2);
+  }
+
+  .cell.gone {
+    background: var(--cell-used);
+    color: var(--cell-used);
+    border-color: #111840;
+    cursor: default;
+    pointer-events: none;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ── SCOREBOARD ── */
+  .sboard {
+    background: var(--dark-bg);
+    border-top: 2px solid var(--gold);
+    padding: 10px 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .sc {
+    background: var(--navy2);
+    border: 1.5px solid var(--blue-mid);
+    border-radius: 12px;
+    padding: 10px 14px;
+    min-width: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.15s;
+  }
+
+  .sc:hover { border-color: rgba(240,192,64,0.4); }
+
+  .scn {
+    font-size: 11px;
+    color: var(--blue-light);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .scv {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gold);
+    font-family: 'Playfair Display', serif;
+  }
+
+  .scbr { display: flex; gap: 5px; }
+
+  .scb {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--gold);
+    font-family: 'Barlow', sans-serif;
+    transition: all 0.12s;
+  }
+
+  .scb-p { background: var(--gold); color: var(--navy); }
+  .scb-p:hover { background: var(--gold2); }
+  .scb-m { background: transparent; color: var(--gold); }
+  .scb-m:hover { background: rgba(240,192,64,0.15); }
+  .scb-e { background: transparent; color: #6070a0; border-color: var(--blue-mid); font-size: 11px; padding: 3px 8px; }
+  .scb-e:hover { color: var(--gold); border-color: var(--gold); }
+
+  /* ── QUESTION OVERLAY ── */
+  .ov {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(5,5,30,0.93);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .ov.on { display: flex; }
+
+  .mod {
+    background: var(--navy2);
+    border: 3px solid var(--gold);
+    border-radius: 18px;
+    padding: 32px 28px 24px;
+    max-width: 620px;
+    width: 100%;
+    text-align: center;
+    animation: popIn 0.2s ease;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.93); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .mv {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 4px;
+    text-shadow: 0 0 20px rgba(240,192,64,0.3);
+  }
+
+  .mc {
+    font-size: 11px;
+    color: #8090c0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  .mq {
+    font-size: clamp(16px, 2.5vw, 20px);
+    color: #fff;
+    line-height: 1.7;
+    margin-bottom: 20px;
+    min-height: 50px;
+  }
+
+  .ma {
+    display: none;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    font-size: 17px;
+    color: var(--gold2);
+    line-height: 1.6;
+    text-align: left;
+  }
+
+  .ma.on { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .award-label {
+    font-size: 11px;
+    color: #8090c0;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+  }
+
+  .award-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .at { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .atn { font-size: 11px; color: var(--blue-light); font-weight: 600; text-transform: uppercase; }
+  .atb { display: flex; gap: 5px; }
+
+  .ab {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid var(--gold);
+    font-family: 'Barlow', sans-serif;
+    transition: all 0.12s;
+  }
+
+  .ab-p { background: var(--gold); color: var(--navy); }
+  .ab-p:hover { background: var(--gold2); }
+  .ab-m { background: transparent; color: var(--gold); }
+  .ab-m:hover { background: rgba(240,192,64,0.18); }
+
+  .mbtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  .mbtn {
+    padding: 11px 26px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 2px solid var(--gold);
+    font-family: 'Barlow', sans-serif;
+    transition: all 0.12s;
+  }
+
+  .mbtn-r { background: var(--gold); color: var(--navy); }
+  .mbtn-r:hover { background: var(--gold2); }
+  .mbtn-c { background: transparent; color: var(--gold); }
+  .mbtn-c:hover { background: rgba(240,192,64,0.18); }
+
+  /* ── MANUAL SCORE OVERLAY ── */
+  .eov {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(5,5,30,0.93);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .eov.on { display: flex; }
+
+  .emod {
+    background: var(--navy2);
+    border: 3px solid var(--gold);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    animation: popIn 0.2s ease;
+  }
+
+  .emod h3 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 22px; margin-bottom: 6px; }
+  .emod p { color: var(--blue-light); font-size: 13px; margin-bottom: 16px; }
+
+  .emod input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid var(--blue-mid);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 22px;
+    font-family: 'Playfair Display', serif;
+    text-align: center;
+    margin-bottom: 16px;
+    transition: border-color 0.15s;
+  }
+
+  .emod input:focus { outline: none; border-color: var(--gold); }
+  .emod-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .board { gap: 4px; padding: 5px; }
+    .ch { min-height: 46px; font-size: 7.5px; padding: 6px 2px; }
+    .cell { min-height: 42px; font-size: 13px; }
+    .mod { padding: 22px 16px 18px; }
+    .mv { font-size: 36px; }
+    .setup-card { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup">
+  <h1>JEOPARDY!</h1>
+  <p class="subtitle">Nannestad High School &mdash; The Final Showdown</p>
+
+  <div class="setup-card">
+    <div class="step-label">How many teams are playing?</div>
+    <div class="tc-row" id="tcr"></div>
+
+    <div class="step-label">Team names <span style="font-weight:400;color:#6070a0;">(optional)</span></div>
+    <div class="names-grid" id="ning"></div>
+
+    <button class="go-btn" onclick="startGame()">▶ &nbsp; Start Game</button>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game">
+  <div class="gtitle"><span>JEOPARDY!</span></div>
+  <div class="board" id="board"></div>
+  <div class="sboard" id="sboard"></div>
+</div>
+
+<!-- QUESTION OVERLAY -->
+<div class="ov" id="qov">
+  <div class="mod">
+    <div class="mv" id="mv"></div>
+    <div class="mc" id="mc"></div>
+    <div class="mq" id="mq"></div>
+    <div class="ma" id="ma"></div>
+    <div class="award-label">Award / deduct points</div>
+    <div class="award-row" id="arow"></div>
+    <div class="mbtns">
+      <button class="mbtn mbtn-r" id="rbtn" onclick="revealAns()">Reveal Answer</button>
+      <button class="mbtn mbtn-c" onclick="closeQ()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL SCORE OVERLAY -->
+<div class="eov" id="eov">
+  <div class="emod">
+    <h3 id="etitle">Edit Score</h3>
+    <p id="esubt">Enter a point value</p>
+    <input type="number" id="einput" placeholder="e.g. 200" min="0" />
+    <div class="emod-btns">
+      <button class="mbtn mbtn-r" onclick="applyEdit(1)">+ Add</button>
+      <button class="mbtn mbtn-c" onclick="applyEdit(-1)">− Subtract</button>
+      <button class="mbtn mbtn-c" onclick="closeEdit()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATS = [
+  "Your Brain",
+  "Social Media & Teenagers",
+  "Ethnic Minorities in the USA",
+  "No Kings Movement",
+  "Civil Rights Movement",
+  "BLM Movement",
+  "South Africa"
+];
+
+const VALS = [100, 200, 300, 400, 500, 600, 700];
+
+const QA = {
+  "Your Brain": {
+    100: { q: "What is the name of the brain chemical often connected to motivation and rewards?", a: "Dopamine" },
+    200: { q: "True or false: your brain stops changing after you become a teenager.", a: "FALSE — the brain keeps changing well into adulthood." },
+    300: { q: "Why can sleep improve learning and memory?", a: "The brain processes and stores information during sleep." },
+    400: { q: "What is neuroplasticity?", a: "The brain's ability to change and form new connections." },
+    500: { q: "Why are phones and social media sometimes described as 'attention traps'?", a: "They constantly compete for our attention and trigger reward responses." },
+    600: { q: "Explain why stress can sometimes help performance and sometimes harm it.", a: "A little stress can motivate; too much harms focus and memory." },
+    700: { q: "Which part of the brain is responsible for decision-making, impulse control, and planning — and is still developing in teenagers?", a: "The prefrontal cortex." }
+  },
+  "Social Media & Teenagers": {
+    100: { q: "Name three popular social media platforms used by teenagers.", a: "e.g. TikTok, Snapchat, Instagram." },
+    200: { q: "What does the word 'algorithm' mean on social media?", a: "A system that decides what content users see." },
+    300: { q: "Give one positive effect social media can have on teenagers.", a: "Connection, learning, support, creativity, or activism." },
+    400: { q: "Give three negative effects too much social media may have.", a: "Stress, anxiety, comparison, sleep problems, distraction." },
+    500: { q: "Why do some people say social media can create 'echo chambers'?", a: "People mainly see opinions similar to their own." },
+    600: { q: "Explain how influencers can affect teenagers' choices or opinions.", a: "They shape fashion, beliefs, habits, and buying decisions." },
+    700: { q: "Which social media platform currently has the highest number of users in the world?", a: "Facebook." }
+  },
+  "Ethnic Minorities in the USA": {
+    100: { q: "What does the term 'ethnic minority' mean?", a: "A group with a different ethnic or cultural background than the majority." },
+    200: { q: "Name two ethnic minority groups in the USA.", a: "e.g. Hispanic Americans, African Americans, Asian Americans, Native Americans." },
+    300: { q: "What does discrimination mean?", a: "Unfair treatment because of someone's identity or background." },
+    400: { q: "What is the 'model minority' stereotype?", a: "The idea that a minority group is seen as especially successful — often applied to Asian Americans, but criticised for creating unfair expectations." },
+    500: { q: "What challenges may some ethnic minorities experience in the USA?", a: "Inequality, discrimination, and lower opportunities." },
+    600: { q: "Explain the idea of the USA as a 'melting pot' or 'salad bowl.'", a: "Melting pot = cultures blending into one. Salad bowl = cultures keeping their identities while coexisting." },
+    700: { q: "Which U.S. state has one of the highest populations of people with Norwegian ancestry?", a: "Minnesota — also accepted: North Dakota or Wisconsin." }
+  },
+  "No Kings Movement": {
+    100: { q: "What is the main idea behind the 'No Kings' movement?", a: "Opposition to authoritarian leadership and support for democracy." },
+    200: { q: "In which country did the movement gain attention?", a: "The USA." },
+    300: { q: "What does the phrase 'No Kings' symbolise politically?", a: "Nobody should have too much power." },
+    400: { q: "Why do some citizens join political protests?", a: "To express their opinions or demand change." },
+    500: { q: "What is the difference between democracy and authoritarianism?", a: "Democracy = power held by the people. Authoritarianism = power concentrated in one leader or group." },
+    600: { q: "Which colour became strongly associated with the 'No Kings' movement and was often seen in protests and online visuals?", a: "Yellow." },
+    700: { q: "Which English king was ruling when the American colonies were still under British control before U.S. independence?", a: "King George III." }
+  },
+  "Civil Rights Movement": {
+    100: { q: "Which group mainly fought for equal rights during the Civil Rights Movement?", a: "African Americans." },
+    200: { q: "Who was a famous leader of the movement known for peaceful protest?", a: "Martin Luther King Jr." },
+    300: { q: "What is the name of the famous speech delivered during the March on Washington in 1963?", a: 'The "I Have a Dream" speech.' },
+    400: { q: "What was segregation?", a: "The separation of people based on race." },
+    500: { q: "Why was the Civil Rights Movement important in U.S. history?", a: "It helped end legal segregation and improve civil rights for African Americans." },
+    600: { q: "Who was Emmett Till?", a: "A 14-year-old African American boy whose brutal murder in 1955 became a major catalyst for the Civil Rights Movement." },
+    700: { q: "This 6-year-old became famous in 1960 for attending an all-white school in New Orleans during desegregation.", a: "Ruby Bridges." }
+  },
+  "BLM Movement": {
+    100: { q: "What does BLM stand for?", a: "Black Lives Matter." },
+    200: { q: "Why was the movement created?", a: "To protest racial injustice and police violence." },
+    300: { q: "What event helped increase global attention to BLM in 2020?", a: "The death of George Floyd." },
+    400: { q: "Why did protests spread to countries outside the USA?", a: "People connected it to wider issues of racism around the world." },
+    500: { q: "This phrase became widely used in 2020 protests and refers to reducing police budgets and investing more in social services.", a: '"Defund the police."' },
+    600: { q: "What are some tools or methods used by police to control crowds during protests?", a: "e.g. Tear gas, pepper spray, batons, rubber bullets, handcuffs, shields." },
+    700: { q: "Compare BLM with the Civil Rights Movement — give 3 similarities or differences.", a: "e.g. Both fight racial injustice / CRM focused on legal change, BLM on culture & policing / BLM is decentralised, CRM had clear leaders / BLM is global, CRM mainly US-based." }
+  },
+  "South Africa": {
+    100: { q: "Which system of racial separation existed in South Africa?", a: "Apartheid." },
+    200: { q: "What was apartheid?", a: "A system separating people by race." },
+    300: { q: "Who became South Africa's first Black president?", a: "Nelson Mandela." },
+    400: { q: "How many years did Nelson Mandela spend imprisoned on Robben Island?", a: "27 years." },
+    500: { q: "What are the colours of the South African flag?", a: "Black, green, yellow, white, red, and blue." },
+    600: { q: "Why is South Africa often called the 'Rainbow Nation'?", a: "Because of its many different cultures and ethnic groups living together." },
+    700: { q: "What were the laws in the United States that enforced racial segregation in a way often compared to apartheid?", a: "Jim Crow laws." }
+  }
+};
+
+let teams = [], numT = 2, used = {}, curVal = 0, editIdx = null;
+
+function buildSetup() {
+  const r = document.getElementById('tcr');
+  r.innerHTML = '';
+  [2, 3, 4, 5].forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'tc-btn' + (n === numT ? ' on' : '');
+    b.textContent = n + ' teams';
+    b.onclick = () => { numT = n; buildSetup(); };
+    r.appendChild(b);
+  });
+  const g = document.getElementById('ning');
+  const old = [];
+  g.querySelectorAll('input').forEach(i => old.push(i.value));
+  g.innerHTML = '';
+  for (let i = 0; i < numT; i++) {
+    const inp = document.createElement('input');
+    inp.placeholder = 'Team ' + (i + 1);
+    inp.value = old[i] || '';
+    inp.id = 'ni' + i;
+    g.appendChild(inp);
+  }
+}
+
+function startGame() {
+  teams = [];
+  for (let i = 0; i < numT; i++) {
+    const el = document.getElementById('ni' + i);
+    teams.push({ name: el && el.value.trim() ? el.value.trim() : 'Team ' + (i + 1), score: 0 });
+  }
+  used = {};
+  document.getElementById('setup').style.display = 'none';
+  const g = document.getElementById('game');
+  g.style.display = 'flex';
+  buildBoard();
+  buildSboard();
+}
+
+function buildBoard() {
+  const b = document.getElementById('board');
+  b.innerHTML = '';
+  CATS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'ch';
+    d.textContent = c;
+    b.appendChild(d);
+  });
+  VALS.forEach(v => CATS.forEach(c => {
+    const k = c + '|' + v;
+    const d = document.createElement('div');
+    d.className = 'cell' + (used[k] ? ' gone' : '');
+    d.id = 'c' + k;
+    d.textContent = used[k] ? '' : '$' + v;
+    if (!used[k]) d.onclick = () => openQ(c, v, k);
+    b.appendChild(d);
+  }));
+}
+
+function buildSboard() {
+  const s = document.getElementById('sboard');
+  s.innerHTML = '';
+  teams.forEach((t, i) => {
+    const d = document.createElement('div');
+    d.className = 'sc';
+    d.innerHTML = `
+      <div class="scn">${t.name}</div>
+      <div class="scv" id="sv${i}">$${t.score}</div>
+      <div class="scbr">
+        <button class="scb scb-p" id="sp${i}" onclick="adjScore(${i},1)">+pts</button>
+        <button class="scb scb-m" id="sm${i}" onclick="adjScore(${i},-1)">−pts</button>
+      </div>
+      <button class="scb scb-e" onclick="openEdit(${i})">✎ manual</button>
+    `;
+    s.appendChild(d);
+  });
+  refreshBtnLabels();
+}
+
+function refreshBtnLabels() {
+  teams.forEach((_, i) => {
+    const lbl = curVal ? '$' + curVal : 'pts';
+    const sp = document.getElementById('sp' + i);
+    const sm = document.getElementById('sm' + i);
+    if (sp) sp.textContent = '+' + lbl;
+    if (sm) sm.textContent = '−' + lbl;
+  });
+}
+
+function adjScore(i, dir) {
+  const pts = curVal || 100;
+  teams[i].score += dir * pts;
+  document.getElementById('sv' + i).textContent = '$' + teams[i].score;
+  rebuildAwardRow();
+}
+
+function openEdit(i) {
+  editIdx = i;
+  document.getElementById('etitle').textContent = teams[i].name;
+  document.getElementById('esubt').textContent = 'Current score: $' + teams[i].score;
+  document.getElementById('einput').value = '';
+  document.getElementById('eov').classList.add('on');
+  setTimeout(() => document.getElementById('einput').focus(), 100);
+}
+
+function applyEdit(dir) {
+  const v = parseInt(document.getElementById('einput').value);
+  if (!isNaN(v) && v > 0 && editIdx !== null) {
+    teams[editIdx].score += dir * v;
+    document.getElementById('sv' + editIdx).textContent = '$' + teams[editIdx].score;
+    rebuildAwardRow();
+  }
+  closeEdit();
+}
+
+function closeEdit() {
+  document.getElementById('eov').classList.remove('on');
+  editIdx = null;
+}
+
+function openQ(cat, val, key) {
+  curVal = val;
+  const item = QA[cat][val];
+  document.getElementById('mv').textContent = '$' + val;
+  document.getElementById('mc').textContent = cat;
+  document.getElementById('mq').textContent = item.q;
+  const ma = document.getElementById('ma');
+  ma.textContent = '✓  ' + item.a;
+  ma.classList.remove('on');
+  document.getElementById('rbtn').style.display = '';
+  rebuildAwardRow();
+  document.getElementById('qov').classList.add('on');
+  refreshBtnLabels();
+  used[key] = true;
+  const cell = document.getElementById('c' + key);
+  if (cell) { cell.classList.add('gone'); cell.textContent = ''; cell.onclick = null; }
+}
+
+function rebuildAwardRow() {
+  const row = document.getElementById('arow');
+  row.innerHTML = '';
+  teams.forEach((t, i) => {
+    const d = document.createElement('div');
+    d.className = 'at';
+    d.innerHTML = `
+      <div class="atn">${t.name}</div>
+      <div class="atb">
+        <button class="ab ab-p" onclick="adjScore(${i},1)">+$${curVal}</button>
+        <button class="ab ab-m" onclick="adjScore(${i},-1)">−$${curVal}</button>
+      </div>
+    `;
+    row.appendChild(d);
+  });
+}
+
+function revealAns() {
+  document.getElementById('ma').classList.add('on');
+  document.getElementById('rbtn').style.display = 'none';
+}
+
+function closeQ() {
+  document.getElementById('qov').classList.remove('on');
+  curVal = 0;
+  refreshBtnLabels();
+}
+
+// Close overlays on background click
+document.getElementById('qov').addEventListener('click', e => { if (e.target === document.getElementById('qov')) closeQ(); });
+document.getElementById('eov').addEventListener('click', e => { if (e.target === document.getElementById('eov')) closeEdit(); });
+
+// Enter key on manual score input
+document.getElementById('einput').addEventListener('keydown', e => { if (e.key === 'Enter') applyEdit(1); });
+
+buildSetup();
+</script>
+</body>
+</html>
